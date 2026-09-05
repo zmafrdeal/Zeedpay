@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zeedpay Payment Link</title>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;color:#182235;background:#f5f7fb}*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px 16px;background:radial-gradient(circle at 50% -10%,#dbe9ff 0,#f5f7fb 42%)}main{width:min(560px,100%);margin:auto}.brand{display:flex;align-items:center;gap:9px;color:#174985;font-weight:800;margin:5px 2px 18px}.brand-mark{display:grid;place-items:center;width:33px;height:33px;border-radius:11px;background:#0d5bd7;color:#fff}.card{background:#fff;border:1px solid #e5eaf2;border-radius:24px;overflow:hidden;box-shadow:0 18px 44px #1a376314}.head{padding:26px;background:linear-gradient(135deg,#0d5bd7,#174985);color:#fff}.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:.64rem;font-weight:800;color:#cfe0ff}.head h1{font-size:1.8rem;line-height:1.15;margin:10px 0 7px}.head p{margin:0;color:#e1ebff;font-size:.85rem;line-height:1.5;white-space:pre-wrap}.body{padding:25px}.amount{font-size:1.75rem;font-weight:800;margin-bottom:3px}.muted{color:#8791a0;font-size:.72rem}.organizer{margin:18px 0 22px;padding:12px 14px;border-radius:13px;background:#f4f7fc;color:#6d7787;font-size:.74rem}.organizer strong{color:#182235}.method{display:inline-block;padding:7px 10px;border-radius:9px;background:#eef4ff;color:#174985;font-size:.7rem;font-weight:800;margin-bottom:18px}.form{display:grid;gap:13px}.field{display:grid;gap:6px}.field label{font-size:.7rem;font-weight:700;color:#626d7f}.field input{height:45px;border:1px solid #dfe5ee;border-radius:12px;padding:0 12px;font:inherit;font-size:.84rem;outline:0}.field input:focus{border-color:#0d5bd7;box-shadow:0 0 0 3px #0d5bd71c}.button{height:47px;border:0;border-radius:13px;background:#0d5bd7;color:#fff;font:inherit;font-weight:800;cursor:pointer}.button:disabled{opacity:.65}.notice{display:none;padding:13px;border-radius:12px;font-size:.76rem;line-height:1.45;margin-bottom:15px}.notice.show{display:block}.pending{background:#fff7dc;color:#725910}.success{background:#e9f8ee;color:#18743b}.error{background:#fff0f0;color:#a42c35}.fine{color:#8a93a1;font-size:.68rem;line-height:1.45}.footer{text-align:center;color:#929aaa;font-size:.67rem;margin-top:16px}.unavailable{text-align:center;padding:45px 20px}.unavailable h1{font-size:1.25rem}.unavailable p{color:#7d8798;font-size:.8rem}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand"><span class="brand-mark">Z</span> Zeedpay</div>
+    <section id="app" class="card"><div class="unavailable">Loading payment link…</div></section>
+    <div class="footer">Payments are processed securely by Zeedpay.</div>
+  </main>
+  <script>
+    const API=(window.ZEEDPAY_API_URL||window.LIPILA_API_URL||"https://zeedpayserver.onrender.com").replace(/\/+$/,"");
+    const queryReference=new URLSearchParams(location.search).get("reference")||"";
+    const pathReference=location.pathname.split("/").filter(Boolean).pop()||"";
+    const reference=decodeURIComponent(queryReference||(pathReference==="pay.html"?"":pathReference));
+    const app=document.getElementById("app");
+    let link=null,timer=null;
+    const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    const money=(v,c)=>`${c} ${Number(v||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    const json=async(url,options)=>{const r=await fetch(url,options);const b=await r.json().catch(()=>({}));if(!r.ok||b.success===false)throw Error(b.message||b.error?.message||"Something went wrong");return b};
+    const success=s=>/success|complete|paid|settled|approved|processed/i.test(String(s||""));
+    const final=s=>/success|complete|paid|settled|approved|processed|fail|cancel|reject|declin|expired|revers|refund/i.test(String(s||""));
+    function notice(text,type){const e=document.getElementById("notice");if(e){e.className=`notice show ${type}`;e.textContent=text}}
+    function render(){
+      const mobile=link.paymentMethod==="mobile_money";
+      app.innerHTML=`<div class="head"><div class="eyebrow">Payment link</div><h1>${esc(link.title)}</h1><p>${esc(link.description||"Make a secure payment with Zeedpay.")}</p></div><div class="body"><div class="amount">${esc(money(link.amount,link.currency))}</div><div class="muted">${mobile?"Mobile Money payment":"Secure card payment"}</div><div class="organizer">Paying <strong>${esc(link.organizer||"Zeedpay merchant")}</strong>${link.businessName?` · ${esc(link.businessName)}`:""}</div><div class="method">${mobile?"Mobile Money":"Card"}</div><div id="notice" class="notice"></div>${mobile?`<form id="payForm" class="form"><div class="field"><label for="donorName">Your name</label><input id="donorName" name="donorName" autocomplete="name" required placeholder="Full name"></div><div class="field"><label for="phoneNumber">Mobile money number</label><input id="phoneNumber" name="phoneNumber" type="tel" autocomplete="tel" required placeholder="+260…"></div><p class="fine">Approve the payment prompt sent to this number. This page checks the result automatically.</p><button class="button" type="submit">Pay with Mobile Money</button></form>`:`<button class="button" id="cardButton" ${link.checkoutUrl?"":"disabled"}>${link.checkoutUrl?"Continue to Card Checkout":"Checkout is preparing…"}</button><p class="fine">Your card details are entered on the secure checkout page.</p>`}</div>`;
+      if(mobile)document.getElementById("payForm").addEventListener("submit",startMobile);else document.getElementById("cardButton")?.addEventListener("click",()=>{if(link.checkoutUrl)location.href=link.checkoutUrl});
+    }
+    async function startMobile(e){
+      e.preventDefault();const form=e.currentTarget,button=form.querySelector("button");button.disabled=true;notice("Starting your payment…","pending");
+      try{const data=Object.fromEntries(new FormData(form).entries());const result=await json(`${API}/api/v1/public/payment-links/${encodeURIComponent(reference)}/contribute`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});const payload=result.data||result;const id=payload.contributionReferenceId||payload.referenceId;if(!id)throw Error("The payment was created without a tracking reference.");notice("Payment prompt sent. Approve it on your phone; this page will update automatically.","pending");poll(id)}catch(error){notice(error.message||"Could not start this payment.","error");button.disabled=false}
+    }
+    function poll(id){if(timer)clearInterval(timer);const check=async()=>{try{const result=await json(`${API}/api/v1/public/payment-links/${encodeURIComponent(reference)}/contributions/${encodeURIComponent(id)}/status`);const payload=result.data||result;const status=payload.status||payload.transactionStatus;if(success(status)){clearInterval(timer);notice("Payment successful. Thank you.","success")}else if(final(status)){clearInterval(timer);notice("Payment was not completed. You can try again.","error");document.querySelector("#payForm button")?.removeAttribute("disabled")}}catch{}};check();timer=setInterval(check,5000)}
+    async function load(){try{const result=await json(`${API}/api/v1/public/payment-links/${encodeURIComponent(reference)}`);link=result.link||result.data?.link;if(!link)throw Error("This payment link could not be loaded.");render()}catch(error){app.innerHTML=`<div class="unavailable"><h1>Payment link unavailable</h1><p>${esc(error.message||"This link may be invalid or inactive.")}</p></div>`}}
+    load();
+  </script>
+</body>
+</html>
