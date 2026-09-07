@@ -1,7 +1,9 @@
-const CACHE_NAME = "zeedpay-shell-v2";
+const CACHE_NAME = "zeedpay-shell-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./auth.html",
+  "./admin.html",
   "./pool.html",
   "./pay.html",
   "./manifest.json",
@@ -23,6 +25,21 @@ self.addEventListener("activate", event => {
         keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
       ))
       .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  const target = event.notification.data?.url || new URL("./index.html#notifications", self.location.origin).href;
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true })
+      .then(openClients => {
+        const existing = openClients.find(client => client.url.startsWith(self.location.origin));
+        if (existing) {
+          return existing.navigate(target).then(client => client?.focus());
+        }
+        return clients.openWindow(target);
+      })
   );
 });
 
