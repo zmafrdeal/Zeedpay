@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="./flavocon.png">
+  <title>Zeedpay Fundraiser</title>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;color:#4d3b6c;background:#f5f7fb}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;padding:20px 14px;background:radial-gradient(circle at 50% -10%,#f3edf7 0,#f5f7fb 45%)}
+    main{width:min(620px,100%);margin:auto}.brand{display:flex;align-items:center;gap:9px;color:#4d3b6c;font-weight:800;margin:4px 3px 16px}.brand-mark{width:32px;height:32px;border-radius:10px;overflow:hidden;background:#ff5f01}.brand-mark img{width:100%;height:100%;object-fit:cover}
+    .card{overflow:hidden;background:#fff;border:1px solid #f3edf7;border-radius:24px;box-shadow:0 18px 44px #4d3b6c14}.hero{padding:27px 25px;color:#fff;background:linear-gradient(135deg,#ff5f01,#4d3b6c)}.eyebrow{color:#d4b5e5;font-size:.64rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.hero h1{margin:10px 0 8px;font-size:1.85rem;line-height:1.12;letter-spacing:-.04em}.hero p{margin:0;color:#f3edf7;font-size:.85rem;line-height:1.5;white-space:pre-wrap}.body{padding:24px}.organizer{margin:0 0 21px;padding:12px 14px;border-radius:14px;background:#f3f6fb;color:#4d3b6c;font-size:.73rem}.organizer strong{color:#4d3b6c}.progress-wrap{margin-bottom:23px}.progress-label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px}.progress-label strong{font-size:1.05rem}.progress-label span{color:#4d3b6c;font-size:.72rem;text-align:right}.progress{height:9px;overflow:hidden;border-radius:99px;background:#e9eef6}.progress i{display:block;height:100%;border-radius:inherit;background:#ff5f01}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 22px}.step{display:flex;align-items:center;gap:7px;color:#f3edf7;font-size:.68rem;font-weight:750}.step:before{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;content:"";border:1px solid #f3edf7}.step.active{color:#4d3b6c}.step.active:before{content:"✓";color:#fff;border-color:#ff5f01;background:#ff5f01}.step.current:before{content:"2";color:#ff5f01;border-color:#ff5f01;background:#f3edf7}.method{display:inline-flex;padding:7px 10px;margin-bottom:14px;border-radius:9px;color:#4d3b6c;background:#f3edf7;font-size:.68rem;font-weight:800}.amount-title{margin:0 0 9px;color:#4d3b6c;font-size:.74rem;font-weight:800}.quick-amounts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}.quick-amounts button{padding:9px 13px;border:1px solid #f3edf7;border-radius:10px;color:#4d3b6c;background:#fff;font:inherit;font-size:.74rem;font-weight:750;cursor:pointer}.quick-amounts button.selected,.quick-amounts button:hover{border-color:#ff5f01;background:#f3edf7}.form{display:grid;gap:13px}.field{display:grid;gap:6px}.field label{color:#4d3b6c;font-size:.7rem;font-weight:750}.field input{width:100%;height:46px;padding:0 12px;border:1px solid #f3edf7;border-radius:12px;outline:0;font:inherit;font-size:.84rem}.field input:focus{border-color:#ff5f01;box-shadow:0 0 0 3px #fd6d191c}.button{height:49px;border:0;border-radius:13px;color:#fff;background:#ff5f01;font:inherit;font-weight:800;cursor:pointer;box-shadow:0 8px 16px #fd6d192b}.button:disabled{cursor:wait;opacity:.65}.notice{display:none;margin-bottom:15px;padding:13px;border-radius:12px;font-size:.76rem;line-height:1.45}.notice.show{display:block}.pending{color:#725910;background:#fff7dc}.success{color:#18743b;background:#e9f8ee}.error{color:#a42c35;background:#fff0f0}.fine{margin-top:14px;color:#f3edf7;font-size:.68rem;line-height:1.45}.footer{margin-top:15px;color:#f3edf7;font-size:.67rem;text-align:center}.unavailable{padding:45px 20px;text-align:center}.unavailable h1{font-size:1.25rem}.unavailable p{color:#f3edf7;font-size:.8rem}
+    @media(max-width:480px){body{padding:12px 10px}.hero{padding:23px 19px}.hero h1{font-size:1.52rem}.body{padding:20px 17px}.progress-label{align-items:flex-start;flex-direction:column;gap:3px}.steps{gap:4px}.step{font-size:.62rem}.step:before{width:22px;height:22px}.quick-amounts button{flex:1 0 calc(33.333% - 8px)}}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand"><span class="brand-mark"><img src="./flavocon.png" alt="Zeedpay"></span> Zeedpay</div>
+    <section id="app" class="card"><div class="unavailable"><h1>Loading fundraiser…</h1><p>Getting the latest contribution details.</p></div></section>
+    <div class="footer">Contributions are processed securely by Zeedpay.</div>
+  </main>
+  <script>
+    const API=(window.ZEEDPAY_API_URL||window.LIPILA_API_URL||"https://zeedpayserver.onrender.com").replace(/\/+$/,"");
+    const query=new URLSearchParams(location.search);
+    const pathReference=location.pathname.split("/").filter(Boolean).pop()||"";
+    const reference=decodeURIComponent(query.get("reference")||(pathReference==="pool.html"?"":pathReference));
+    const app=document.getElementById("app");
+    let pool=null,timer=null;
+    const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    const money=(value,currency="ZMW")=>`${currency} ${Number(value||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    const json=async(url,options)=>{const response=await fetch(url,options);const body=await response.json().catch(()=>({}));if(!response.ok||body.success===false)throw Error(body.error?.message||body.message||"Something went wrong");return body};
+    const success=s=>/success|complete|paid|settled|approved|processed/i.test(String(s||""));
+    const final=s=>/success|complete|paid|settled|approved|processed|fail|cancel|reject|declin|expired|revers|refund/i.test(String(s||""));
+    const deadline=value=>value?`Contribution deadline: ${new Date(value).toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"})}`:"Open-ended fundraiser";
+    const showNotice=(message,kind)=>{const el=document.getElementById("notice");if(!el)return;el.textContent=message;el.className=`notice show ${kind||""}`};
+    function render(){
+      if(!pool){app.innerHTML='<div class="unavailable"><h1>Fundraiser unavailable</h1><p>This fundraiser could not be found or is no longer public.</p></div>';return}
+      const closed=pool.status!=="ongoing", currency=pool.currency||"ZMW", target=Number(pool.targetAmount||0), collected=Number(pool.collectedAmount||0);
+      const percent=Math.min(100,target?collected/target*100:0), method=pool.paymentMethod==="mobile_money"?"Mobile Money":"Card";
+      const quick=[10,20,50,100].map(amount=>amount).filter(amount=>amount<target||!target);
+      app.innerHTML=`<div class="hero"><div class="eyebrow">Public fundraiser</div><h1>${esc(pool.title||"Fundraiser")}</h1><p>${esc(pool.description||"Support this fundraiser securely with Zeedpay.")}</p></div><div class="body"><div class="organizer">Organized by <strong>${esc(pool.organizer?.name||"Zeedpay organizer")}</strong><br><span>${esc(deadline(pool.expiresAt))}</span></div><div class="progress-wrap"><div class="progress-label"><strong>${money(collected,currency)} raised</strong><span>of ${money(target,currency)}</span></div><div class="progress"><i style="width:${percent}%"></i></div></div><div class="steps"><div class="step active">Details</div><div class="step current">Payment</div><div class="step">Complete</div></div><span class="method">${method}</span><div id="notice" class="notice"></div>${closed?`<div class="notice show error">This fundraiser is no longer accepting contributions.</div>`:`<form id="contributeForm" class="form"><div><p class="amount-title">Choose a contribution amount</p><div class="quick-amounts">${quick.map(amount=>`<button type="button" data-amount="${amount}">${money(amount,currency)}</button>`).join("")}</div></div><div class="field"><label for="amount">Your contribution amount</label><input id="amount" name="amount" type="number" min="0.01" step="0.01" required placeholder="Enter any amount"></div><div class="field"><label for="donorName">Your name</label><input id="donorName" name="donorName" required autocomplete="name" placeholder="Enter your name"></div>${pool.paymentMethod==="card"?`<div class="field"><label for="email">Email address</label><input id="email" name="email" type="email" required autocomplete="email" placeholder="you@example.com"></div>`:""}<div class="field"><label for="phoneNumber">${pool.paymentMethod==="card"?"Phone number":"Mobile Money phone number"}</label><input id="phoneNumber" name="phoneNumber" type="tel" required autocomplete="tel" placeholder="+260 97 000 0000"></div><button class="button" type="submit">Continue to Payment</button></form><p class="fine">Your contribution amount is optional and chosen by you. You will see a secure payment step after submitting your details.</p>`}</div></div>`;
+      document.querySelectorAll("[data-amount]").forEach(button=>button.addEventListener("click",()=>{document.getElementById("amount").value=button.dataset.amount;document.querySelectorAll("[data-amount]").forEach(item=>item.classList.toggle("selected",item===button))}));
+      document.getElementById("contributeForm")?.addEventListener("submit",startContribution);
+    }
+    async function startContribution(event){
+      event.preventDefault();
+      const form=event.target,button=form.querySelector("button[type=submit]"),payload=Object.fromEntries(new FormData(form).entries());
+      payload.amount=Number(payload.amount);button.disabled=true;button.textContent="Processing payment…";
+      try{
+        const endpoint=pool.paymentMethod==="mobile_money"?"mobile-money":"card";
+        const result=await json(`${API}/api/v1/public/money-pools/${encodeURIComponent(reference)}/contribute/${endpoint}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+        const data=result.data||result, checkoutUrl=data.checkoutUrl||data.paymentUrl||data.redirectUrl||data.checkout_url;
+        if(pool.paymentMethod==="card"&&checkoutUrl){location.href=checkoutUrl;return}
+        const contributionReference=data.contributionReferenceId||data.referenceId;
+        if(!contributionReference)throw Error("The payment was created without a tracking reference.");
+        showNotice("Awaiting secure payment confirmation…","pending");
+        document.querySelector(".step.current")?.classList.add("active");document.querySelector(".step.current")?.classList.remove("current");document.querySelectorAll(".step")[2]?.classList.add("current");poll(contributionReference);
+      }catch(error){showNotice(error.message||"Could not start this contribution. Please try again.","error");button.disabled=false;button.textContent="Continue to Payment"}
+    }
+    function poll(contributionReference){
+      if(timer)clearInterval(timer);
+      const check=async()=>{try{const result=await json(`${API}/api/v1/public/money-pools/${encodeURIComponent(reference)}/contributions/${encodeURIComponent(contributionReference)}/status`);const data=result.data||result,status=data.status||data.transactionStatus;if(success(status)){clearInterval(timer);showNotice("Contribution completed. Thank you for supporting this fundraiser.","success");document.querySelectorAll(".step")[2]?.classList.add("active");document.querySelectorAll(".step")[2]?.classList.remove("current")}else if(final(status)){clearInterval(timer);showNotice(/cancel|cancell/i.test(String(status))?"This payment was cancelled.":"We couldn't complete this payment. You can try again.","error");const button=document.querySelector("#contributeForm button[type=submit]");if(button){button.disabled=false;button.textContent="Try Payment Again"}}}catch(error){/* Keep polling while the provider is processing. */}};
+      check();timer=setInterval(check,5000);
+    }
+    (async()=>{if(!reference){render();return}try{const result=await json(`${API}/api/v1/public/money-pools/${encodeURIComponent(reference)}`);pool=result.pool||result.data?.pool;render()}catch{render()}})();
+  </script>
+</body>
+</html>
